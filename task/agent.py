@@ -33,6 +33,18 @@ class GeneralPurposeAgent:
         #    Here, in state, we will 'hide' tool call history. We need it since we need to preserve full conversation history.
         self.state: dict[str, Any] = {TOOL_CALL_HISTORY_KEY: []}
 
+    @staticmethod
+    def _json_safe(obj: Any) -> Any:
+        # Convert enums/pydantic objects to plain JSON-serializable structures
+        def default(o: Any) -> Any:
+            if hasattr(o, "dict"):
+                return o.dict(exclude_none=True)
+            if hasattr(o, "model_dump"):
+                return o.model_dump(exclude_none=True)
+            return getattr(o, "value", str(o))
+
+        return json.loads(json.dumps(obj, default=default))
+
     async def handle_request(self, deployment_name: str, choice: Choice, request: Request, response: Response) -> Message:
         #TODO:
         # 1. Create AsyncDial, don't forget to provide endpoint as base_url and api_key. Api_key you can take from `request` as well as api_version
@@ -48,11 +60,18 @@ class GeneralPurposeAgent:
         #    - tools: provide list with tool schemas
         #    - deployment_name
         #    - make it stream
+        raw_messages = self._prepare_messages(request.messages)
+        payload_messages = self._json_safe(raw_messages)
+        payload_tools = self._json_safe([
+            tool.schema.model_dump(mode="json") if hasattr(tool.schema, "model_dump") else tool.schema
+            for tool in self.tools
+        ])
+
         chunks = await dial_client.chat.completions.create(
-            messages=self._prepare_messages(request.messages),
-            tools=[tool.schema for tool in self.tools],
+            messages=payload_messages,
+            tools=payload_tools,
             deployment_name=deployment_name,
-            stream=True
+            stream=True,
         )
         # 3. Create:
         #   - `tool_call_index_map` (it is empty dict), here we will collect tool calls by their indexes.
@@ -155,13 +174,14 @@ class GeneralPurposeAgent:
             stage.append_content(f"```json\n\r{json.dumps(json.loads(tool_call.function.arguments), indent=2)}\n\r```\n\r")
             stage.append_content("## Response: \n")
         # 5. Execute tool
-        tool_message = await tool.execute(
+        params = ToolCallParams(
             tool_call=tool_call,
             api_key=api_key,
             conversation_id=conversation_id,
             choice=choice,
-            stage=stage
+            stage=stage,
         )
+        tool_message = await tool.execute(params)
         # 6. Close stage with StageProcessor
         StageProcessor.close_stage_safely(stage)
         # 7. Return tool message as dict and don't forget to exclude none

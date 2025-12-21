@@ -52,25 +52,25 @@ class GeneralPurposeAgentApplication(ChatCompletion):
         # ---
         tools: list[BaseTool] = []
         # 2. Add ImageGenerationTool with DIAL_ENDPOINT
-        tools.append(ImageGenerationTool(DIAL_ENDPOINT))
+        #tools.append(ImageGenerationTool(DIAL_ENDPOINT))
         # 3. Add FileContentExtractionTool with DIAL_ENDPOINT
         tools.append(FileContentExtractionTool(DIAL_ENDPOINT))
         # 4. Add RagTool with DIAL_ENDPOINT, DEPLOYMENT_NAME, and create DocumentCache (it has static method `create`)
-        tools.append(RagTool(DIAL_ENDPOINT, DEPLOYMENT_NAME, DocumentCache.create()))
+        #tools.append(RagTool(DIAL_ENDPOINT, DEPLOYMENT_NAME, DocumentCache.create()))
         # 5. Add PythonCodeInterpreterTool with DIAL_ENDPOINT, `http://localhost:8050/mcp` mcp_url, tool_name is
         #    `execute_code`, more detailed about tools see in repository https://github.com/khshanovskyi/mcp-python-code-interpreter
-        tools.append(await PythonCodeInterpreterTool.create(
-            dial_endpoint=DIAL_ENDPOINT, 
-            mcp_url='http://localhost:8050/mcp', 
-            tool_name='execute_code'))
+        # tools.append(await PythonCodeInterpreterTool.create(
+        #     dial_endpoint=DIAL_ENDPOINT, 
+        #     mcp_url='http://localhost:8050/mcp', 
+        #     tool_name='execute_code'))
         # 6. Extend tools with MCP tools from `http://localhost:8051/mcp` (use method `_get_mcp_tools`)
-        tools.extend(await self._get_mcp_tools('http://localhost:8051/mcp'))
+        # tools.extend(await self._get_mcp_tools('http://localhost:8051/mcp'))
         return tools
 
     async def chat_completion(self, request: Request, response: Response) -> None:
         #TODO:
         # 1. If `self.tools` are absent then call `_create_tools` method and assign to the `self.tools`
-        if self.tools is None:
+        if not self.tools:
             self.tools = await self._create_tools()
         # 2. Create `choice` (`with response.create_single_choice() as choice:`) and:
         #   - Create GeneralPurposeAgent with:
