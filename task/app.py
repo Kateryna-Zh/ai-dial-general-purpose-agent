@@ -56,7 +56,7 @@ class GeneralPurposeAgentApplication(ChatCompletion):
         # 3. Add FileContentExtractionTool with DIAL_ENDPOINT
         tools.append(FileContentExtractionTool(DIAL_ENDPOINT))
         # 4. Add RagTool with DIAL_ENDPOINT, DEPLOYMENT_NAME, and create DocumentCache (it has static method `create`)
-        #tools.append(RagTool(DIAL_ENDPOINT, DEPLOYMENT_NAME, DocumentCache.create()))
+        tools.append(RagTool(DIAL_ENDPOINT, DEPLOYMENT_NAME, DocumentCache.create()))
         # 5. Add PythonCodeInterpreterTool with DIAL_ENDPOINT, `http://localhost:8050/mcp` mcp_url, tool_name is
         #    `execute_code`, more detailed about tools see in repository https://github.com/khshanovskyi/mcp-python-code-interpreter
         # tools.append(await PythonCodeInterpreterTool.create(
