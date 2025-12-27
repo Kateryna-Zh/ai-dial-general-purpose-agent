@@ -24,7 +24,7 @@ from task.tools.rag.rag_tool import RagTool
 
 DIAL_ENDPOINT = os.getenv('DIAL_ENDPOINT', "http://localhost:8080")
 DEPLOYMENT_NAME = os.getenv('DEPLOYMENT_NAME', 'gpt-4o')
-# DEPLOYMENT_NAME = os.getenv('DEPLOYMENT_NAME', 'claude-sonnet-3-7')
+#DEPLOYMENT_NAME = os.getenv('DEPLOYMENT_NAME', 'claude-sonnet-3-7')
 
 
 class GeneralPurposeAgentApplication(ChatCompletion):
@@ -99,12 +99,12 @@ app = DIALApp()
 # 2. Create GeneralPurposeAgentApplication
 agent_app = GeneralPurposeAgentApplication()
 # 2.1 Pre-create tools on startup to avoid per-request MCP initialization
-@app.on_event("startup")
-async def _startup_init_tools() -> None:
-    try:
-        agent_app.tools = await agent_app._create_tools()
-    except Exception as exc:
-        print(f"[startup] Tool initialization failed: {exc}")
+# @app.on_event("startup")
+# async def _startup_init_tools() -> None:
+#     try:
+#         agent_app.tools = await agent_app._create_tools()
+#     except Exception as exc:
+#         print(f"[startup] Tool initialization failed: {exc}")
 # 3. Add to created DIALApp chat_completion with:
 #       - deployment_name="general-purpose-agent"
 #       - impl=agent_app
