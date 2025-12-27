@@ -1,5 +1,6 @@
 import asyncio
 import json
+from datetime import timedelta
 from typing import Optional, Any
 
 from mcp import ClientSession
@@ -48,7 +49,11 @@ class MCPClient:
         if self.session:
             return
         # 2. Call `streamablehttp_client` method with `server_url` and set as `self._streams_context`
-        self._streams_context = streamablehttp_client(self.server_url)
+        self._streams_context = streamablehttp_client(
+            self.server_url,
+            timeout=60,
+            sse_read_timeout=300,
+        )
         # 3. Enter `self._streams_context`, result set as `read_stream, write_stream, _`
         read_stream, write_stream, _ = await self._streams_context.__aenter__()
         # 4. Create ClientSession with streams from above and set as `self._session_context`
@@ -83,9 +88,14 @@ class MCPClient:
         """Call a tool on the MCP server"""
         #TODO: Make tool call and return its result. Do it in proper way (it returns array of content and you need to handle it properly)
         if not self.session:
-            await self.connect()
+            raise RuntimeError("MCP client not connected.")
+            #await self.connect()
 
-        result: CallToolResult = await self.session.call_tool(tool_name, tool_args)
+        result: CallToolResult = await self.session.call_tool(
+            tool_name,
+            tool_args,
+            read_timeout_seconds=timedelta(seconds=300),
+        )
 
         if not result.content:
             return None

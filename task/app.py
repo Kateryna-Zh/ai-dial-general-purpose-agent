@@ -59,10 +59,10 @@ class GeneralPurposeAgentApplication(ChatCompletion):
         tools.append(RagTool(DIAL_ENDPOINT, DEPLOYMENT_NAME, DocumentCache.create()))
         # 5. Add PythonCodeInterpreterTool with DIAL_ENDPOINT, `http://localhost:8050/mcp` mcp_url, tool_name is
         #    `execute_code`, more detailed about tools see in repository https://github.com/khshanovskyi/mcp-python-code-interpreter
-        # tools.append(await PythonCodeInterpreterTool.create(
-        #     dial_endpoint=DIAL_ENDPOINT, 
-        #     mcp_url='http://localhost:8050/mcp', 
-        #     tool_name='execute_code'))
+        tools.append(await PythonCodeInterpreterTool.create(
+             dial_endpoint=DIAL_ENDPOINT, 
+             mcp_url='http://localhost:8050/mcp', 
+             tool_name='execute_code'))
         # 6. Extend tools with MCP tools from `http://localhost:8051/mcp` (use method `_get_mcp_tools`)
         tools.extend(await self._get_mcp_tools('http://localhost:8051/mcp'))
         return tools
@@ -98,6 +98,13 @@ class GeneralPurposeAgentApplication(ChatCompletion):
 app = DIALApp()
 # 2. Create GeneralPurposeAgentApplication
 agent_app = GeneralPurposeAgentApplication()
+# 2.1 Pre-create tools on startup to avoid per-request MCP initialization
+@app.on_event("startup")
+async def _startup_init_tools() -> None:
+    try:
+        agent_app.tools = await agent_app._create_tools()
+    except Exception as exc:
+        print(f"[startup] Tool initialization failed: {exc}")
 # 3. Add to created DIALApp chat_completion with:
 #       - deployment_name="general-purpose-agent"
 #       - impl=agent_app
